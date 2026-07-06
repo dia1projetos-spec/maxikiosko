@@ -17,6 +17,7 @@ const NAV_ITEMS = [
     { href: "caja.html", icon: "🧾", label: "Caja (PDV)", key: "caja" },
     { href: "compras.html", icon: "🗂️", label: "Historial de compras", key: "compras" },
     { href: "compras-familiares.html", icon: "👨‍👩‍👧", label: "Retiros familiares", key: "compras-familiares" },
+    { href: "gastos.html", icon: "🧮", label: "Gastos del negocio", key: "gastos" },
     { href: "resumen-financiero.html", icon: "💰", label: "Resumen financiero", key: "resumen-financiero" },
   ]},
   { group: "Clientes", items: [

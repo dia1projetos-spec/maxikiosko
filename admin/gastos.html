@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gastos — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import {
+      db,
+      collection,
+      getDocs,
+      addDoc,
+      deleteDoc,
+      doc,
+      serverTimestamp,
+      query,
+      orderBy,
+    } from "../js/firebase-config.js";
+    import { formatCurrency, showToast, escapeHtml } from "../js/utils.js";
+
+    await initAdminLayout("gastos", "Gastos del negocio");
+
+    setContent(`
+      <div class="panel" style="max-width:560px;">
+        <div class="panel__header"><h2>Registrar nuevo gasto</h2></div>
+        <form id="expense-form" class="admin-form">
+          <div class="form-group">
+            <label for="expense-description">¿En qué se gastó? *</label>
+            <input type="text" id="expense-description" placeholder="Ej: Compra de mercadería, luz, alquiler..." required>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="expense-amount">Monto *</label>
+              <input type="number" id="expense-amount" min="0" step="0.01" required>
+            </div>
+            <div class="form-group">
+              <label for="expense-date">Fecha *</label>
+              <input type="date" id="expense-date" required>
+            </div>
+          </div>
+          <button type="submit" id="expense-save-btn" class="btn btn-primary btn-block">Guardar gasto</button>
+        </form>
+      </div>
+
+      <div class="stat-grid" style="margin-bottom: var(--space-5);">
+        <div class="stat-card stat-card--loss">
+          <div class="stat-card__label">TOTAL DE GASTOS</div>
+          <div class="stat-card__value" id="total-expenses" style="font-size: var(--fs-2xl);">—</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Gastos registrados</h2>
+          <div class="form-group" style="margin-bottom:0; max-width:220px;">
+            <input type="month" id="filter-month">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Descripción</th><th>Monto</th><th style="width:60px;"></th></tr></thead>
+            <tbody id="expenses-tbody"><tr><td colspan="4"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    `);
+
+    const form = document.getElementById("expense-form");
+    const descInput = document.getElementById("expense-description");
+    const amountInput = document.getElementById("expense-amount");
+    const dateInput = document.getElementById("expense-date");
+    const saveBtn = document.getElementById("expense-save-btn");
+    const tbody = document.getElementById("expenses-tbody");
+    const totalEl = document.getElementById("total-expenses");
+    const filterMonth = document.getElementById("filter-month");
+
+    // Fecha de hoy precargada por comodidad
+    dateInput.value = new Date().toISOString().slice(0, 10);
+
+    let allExpenses = [];
+
+    async function loadExpenses() {
+      const q = query(collection(db, "expenses"), orderBy("date", "desc"));
+      const snap = await getDocs(q);
+      allExpenses = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    }
+
+    function render() {
+      const monthVal = filterMonth.value; // formato "YYYY-MM"
+      const filtered = allExpenses.filter((exp) => !monthVal || (exp.date || "").startsWith(monthVal));
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">No hay gastos registrados${monthVal ? " en ese mes" : ""}.</td></tr>`;
+        totalEl.textContent = formatCurrency(0);
+        return;
+      }
+
+      let total = 0;
+      tbody.innerHTML = filtered
+        .map((exp) => {
+          total += exp.amount || 0;
+          const [y, m, d] = (exp.date || "").split("-");
+          const dateLabel = y ? `${d}/${m}/${y}` : "—";
+          return `
+          <tr data-id="${exp.id}">
+            <td>${dateLabel}</td>
+            <td>${escapeHtml(exp.description)}</td>
+            <td>${formatCurrency(exp.amount)}</td>
+            <td>
+              <button class="icon-btn icon-btn--danger delete-expense-btn" title="Eliminar">🗑️</button>
+            </td>
+          </tr>`;
+        })
+        .join("");
+
+      totalEl.textContent = formatCurrency(total);
+
+      tbody.querySelectorAll(".delete-expense-btn").forEach((btn) =>
+        btn.addEventListener("click", (e) => handleDelete(e.target.closest("tr").dataset.id))
+      );
+    }
+
+    filterMonth.addEventListener("input", render);
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Guardando...";
+      try {
+        await addDoc(collection(db, "expenses"), {
+          description: descInput.value.trim(),
+          amount: Number(amountInput.value),
+          date: dateInput.value, // "YYYY-MM-DD", fácil de filtrar y ordenar
+          createdAt: serverTimestamp(),
+        });
+        showToast("Gasto registrado.", "success");
+        form.reset();
+        dateInput.value = new Date().toISOString().slice(0, 10);
+        await loadExpenses();
+      } catch (err) {
+        console.error(err);
+        showToast("No se pudo guardar el gasto.", "error");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Guardar gasto";
+      }
+    });
+
+    async function handleDelete(id) {
+      if (!confirm("¿Eliminar este gasto?")) return;
+      try {
+        await deleteDoc(doc(db, "expenses", id));
+        showToast("Gasto eliminado.", "success");
+        loadExpenses();
+      } catch (err) {
+        console.error(err);
+        showToast("No se pudo eliminar el gasto.", "error");
+      }
+    }
+
+    loadExpenses();
+  </script>
+</body>
+</html>

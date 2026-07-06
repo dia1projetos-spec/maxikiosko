@@ -25,7 +25,7 @@ export const CLOUDINARY_CLOUD_NAME = "v6wla33d";
 // ⚠️ Reemplazá este valor por el nombre real del preset que crees
 // en el paso de arriba. Mientras tanto, las subidas de imágenes
 // no van a funcionar.
-export const CLOUDINARY_UPLOAD_PRESET = "maxikiosko";
+export const CLOUDINARY_UPLOAD_PRESET = "maxikioso";
 
 const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 

@@ -30,8 +30,16 @@
           <div class="stat-card__value" id="total-family">—</div>
         </div>
         <div class="stat-card stat-card--profit">
-          <div class="stat-card__label">Ganancia acumulada</div>
+          <div class="stat-card__label">Ganancia acumulada (productos)</div>
           <div class="stat-card__value" id="total-profit">—</div>
+        </div>
+        <div class="stat-card stat-card--loss">
+          <div class="stat-card__label">Total de gastos</div>
+          <div class="stat-card__value" id="total-expenses">—</div>
+        </div>
+        <div class="stat-card stat-card--profit">
+          <div class="stat-card__label">Ganancia neta (ganancia − gastos)</div>
+          <div class="stat-card__value" id="net-profit" style="font-size: var(--fs-2xl);">—</div>
         </div>
       </div>
 
@@ -52,12 +60,14 @@
     `);
 
     async function load() {
-      const [salesSnap, productsSnap] = await Promise.all([
+      const [salesSnap, productsSnap, expensesSnap] = await Promise.all([
         getDocs(collection(db, "sales")),
         getDocs(collection(db, "products")),
+        getDocs(collection(db, "expenses")),
       ]);
       const sales = salesSnap.docs.map((d) => d.data());
       const products = productsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const expenses = expensesSnap.docs.map((d) => d.data());
 
       let totalSales = 0;
       let totalFamily = 0;
@@ -67,10 +77,16 @@
       });
 
       const totalProfit = products.reduce((sum, p) => sum + (p.totalProfit || 0), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const netProfit = totalProfit - totalExpenses;
 
       document.getElementById("total-sales").textContent = formatCurrency(totalSales);
       document.getElementById("total-family").textContent = formatCurrency(totalFamily);
       document.getElementById("total-profit").textContent = formatCurrency(totalProfit);
+      document.getElementById("total-expenses").textContent = formatCurrency(totalExpenses);
+      const netProfitEl = document.getElementById("net-profit");
+      netProfitEl.textContent = formatCurrency(netProfit);
+      netProfitEl.style.color = netProfit >= 0 ? "var(--color-success)" : "var(--color-brick)";
 
       const sorted = [...products].sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0));
       const tbody = document.getElementById("ranking-tbody");

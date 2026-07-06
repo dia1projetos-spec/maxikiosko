@@ -126,6 +126,17 @@ orders/{orderId}
 }
 ```
 
+### `expenses` (gastos del negocio)
+```
+expenses/{expenseId}
+{
+  description: string,
+  amount: number,
+  date: string,          // formato "YYYY-MM-DD", fácil de ordenar y filtrar por mes
+  createdAt: timestamp
+}
+```
+
 ## Autenticación
 - Firebase Authentication (Email/Password), usuarios creados manualmente desde la
   consola de Firebase. Todos los usuarios autenticados tienen el mismo nivel de

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Productos — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <!-- Modal de producto (crear/editar) -->
+  <div id="product-modal" class="modal-overlay">
+    <div class="modal-box modal-box--lg">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+        <h2 id="product-modal-title">Nuevo producto</h2>
+        <button id="product-modal-close" class="cart-drawer__close">×</button>
+      </div>
+      <form id="product-form" class="admin-form">
+        <input type="hidden" id="product-id">
+
+        <div class="form-group">
+          <label for="product-name">Nombre del producto *</label>
+          <input type="text" id="product-name" required>
+        </div>
+
+        <div class="form-group">
+          <label>¿Cómo se vende? *</label>
+          <div class="radio-group">
+            <label><input type="radio" name="soldBy" value="unit" checked> Por unidad</label>
+            <label><input type="radio" name="soldBy" value="weight"> Por peso (kg/gramos)</label>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="product-cost-price">Precio de costo (opcional)</label>
+            <input type="number" id="product-cost-price" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label id="sale-price-label" for="product-sale-price">Precio de venta *</label>
+            <input type="number" id="product-sale-price" min="0" step="0.01" required>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="product-barcode">Código de barras (opcional)</label>
+            <input type="text" id="product-barcode">
+          </div>
+          <div class="form-group">
+            <label for="product-category">Categoría (opcional)</label>
+            <select id="product-category">
+              <option value="">Sin categoría</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="product-stock">Stock (opcional)</label>
+            <input type="number" id="product-stock" min="0" step="1">
+          </div>
+          <div class="form-group">
+            <label for="product-profit">Ganancia por unidad (opcional)</label>
+            <input type="number" id="product-profit" min="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="product-image">Foto del producto (opcional)</label>
+          <input type="file" id="product-image" accept="image/*">
+          <img id="product-image-preview" style="display:none; margin-top:8px; width:80px; height:80px; object-fit:cover; border-radius:8px;">
+        </div>
+
+        <button type="submit" id="product-save-btn" class="btn btn-primary btn-block">Guardar producto</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de QR generado -->
+  <div id="qr-modal" class="modal-overlay">
+    <div class="modal-box text-center">
+      <h2>Código QR del producto</h2>
+      <p style="color: var(--color-ink-soft);" id="qr-product-name"></p>
+      <img id="qr-image" style="margin: var(--space-4) auto; width: 220px; height: 220px;">
+      <a id="qr-download-link" class="btn btn-primary btn-block" download>Descargar QR</a>
+      <button id="qr-close-btn" class="btn btn-outline btn-block" style="margin-top: var(--space-3);">Cerrar</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/productos.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inicio — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs, query, where } from "../js/firebase-config.js";
+    import { formatCurrency } from "../js/utils.js";
+
+    await initAdminLayout("dashboard", "Inicio");
+
+    setContent(`
+      <div class="stat-grid">
+        <div class="stat-card stat-card--sales">
+          <div class="stat-card__label">Ventas de hoy</div>
+          <div class="stat-card__value" id="stat-sales-today">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Productos cargados</div>
+          <div class="stat-card__value" id="stat-products">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Clientes cargados</div>
+          <div class="stat-card__value" id="stat-clients">—</div>
+        </div>
+        <div class="stat-card stat-card--loss">
+          <div class="stat-card__label">Fiados abiertos</div>
+          <div class="stat-card__value" id="stat-fiado">—</div>
+        </div>
+      </div>
+
+      <h2 style="margin-bottom: var(--space-4);">Accesos rápidos</h2>
+      <div class="module-grid">
+        <a class="module-card" href="caja.html">
+          <span class="module-card__icon">🧾</span>
+          <span class="module-card__title">Caja (PDV)</span>
+          <span class="module-card__desc">Registrar una venta nueva.</span>
+        </a>
+        <a class="module-card" href="productos.html">
+          <span class="module-card__icon">📦</span>
+          <span class="module-card__title">Productos</span>
+          <span class="module-card__desc">Cargar o editar productos y QR.</span>
+        </a>
+        <a class="module-card" href="clientes.html">
+          <span class="module-card__icon">🧑‍🤝‍🧑</span>
+          <span class="module-card__title">Clientes</span>
+          <span class="module-card__desc">Ver historial y fiados.</span>
+        </a>
+        <a class="module-card" href="resumen-financiero.html">
+          <span class="module-card__icon">💰</span>
+          <span class="module-card__title">Resumen financiero</span>
+          <span class="module-card__desc">Ventas, pérdidas y ranking.</span>
+        </a>
+        <a class="module-card" href="slides.html">
+          <span class="module-card__icon">🖼️</span>
+          <span class="module-card__title">Slides del inicio</span>
+          <span class="module-card__desc">Imágenes promocionales de la tienda.</span>
+        </a>
+        <a class="module-card" href="configuracion.html">
+          <span class="module-card__icon">⚙️</span>
+          <span class="module-card__title">Configuración</span>
+          <span class="module-card__desc">Logo, nombre, WhatsApp y envío.</span>
+        </a>
+      </div>
+    `);
+
+    async function loadStats() {
+      try {
+        const [productsSnap, clientsSnap, salesSnap] = await Promise.all([
+          getDocs(collection(db, "products")),
+          getDocs(collection(db, "clients")),
+          getDocs(collection(db, "sales")),
+        ]);
+
+        document.getElementById("stat-products").textContent = productsSnap.size;
+        document.getElementById("stat-clients").textContent = clientsSnap.size;
+
+        const todayStr = new Date().toDateString();
+        let salesToday = 0;
+        salesSnap.forEach((docSnap) => {
+          const sale = docSnap.data();
+          const date = sale.createdAt?.toDate ? sale.createdAt.toDate() : null;
+          if (date && date.toDateString() === todayStr && !sale.isFamilyWithdrawal) {
+            salesToday += sale.total || 0;
+          }
+        });
+        document.getElementById("stat-sales-today").textContent = formatCurrency(salesToday);
+
+        let fiadoTotal = 0;
+        clientsSnap.forEach((docSnap) => {
+          const client = docSnap.data();
+          if (client.fiadoOpen) fiadoTotal += client.fiadoAmount || 0;
+        });
+        document.getElementById("stat-fiado").textContent = formatCurrency(fiadoTotal);
+      } catch (err) {
+        console.error("Error cargando estadísticas:", err);
+      }
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>

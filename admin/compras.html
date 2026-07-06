@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Historial de compras — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs, query, orderBy } from "../js/firebase-config.js";
+    import { formatCurrency, escapeHtml } from "../js/utils.js";
+
+    await initAdminLayout("compras", "Historial de compras");
+
+    setContent(`
+      <div class="panel">
+        <div class="panel__header"><h2>Filtrar compras</h2></div>
+        <div style="display:flex; gap: var(--space-3); flex-wrap:wrap; align-items:flex-end;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label for="filter-date">Fecha</label>
+            <input type="date" id="filter-date">
+          </div>
+          <div class="form-group" style="margin-bottom:0; flex:1; min-width:200px;">
+            <label for="filter-name">Nombre del cliente</label>
+            <input type="text" id="filter-name" placeholder="Buscar por nombre...">
+          </div>
+          <button id="clear-filters-btn" class="btn btn-outline">Limpiar filtros</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header"><h2>Compras registradas</h2></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr><th>Fecha</th><th>Cliente</th><th>Productos</th><th>Total</th><th>Forma de pago</th></tr>
+            </thead>
+            <tbody id="sales-tbody"><tr><td colspan="5"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    `);
+
+    let allSales = [];
+    let allClients = [];
+
+    const tbody = document.getElementById("sales-tbody");
+    const filterDate = document.getElementById("filter-date");
+    const filterName = document.getElementById("filter-name");
+
+    async function loadData() {
+      const [salesSnap, clientsSnap] = await Promise.all([
+        getDocs(query(collection(db, "sales"), orderBy("createdAt", "desc"))),
+        getDocs(collection(db, "clients")),
+      ]);
+      allSales = salesSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((s) => !s.isFamilyWithdrawal); // los retiros familiares tienen su propia página
+      allClients = clientsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      render();
+    }
+
+    function render() {
+      const dateVal = filterDate.value;
+      const nameVal = filterName.value.trim().toLowerCase();
+
+      const filtered = allSales.filter((sale) => {
+        const client = allClients.find((c) => c.id === sale.clientId);
+        const clientName = client?.name?.toLowerCase() || "";
+        const saleDate = sale.createdAt?.toDate ? sale.createdAt.toDate() : null;
+        const matchesDate = !dateVal || (saleDate && saleDate.toISOString().slice(0, 10) === dateVal);
+        const matchesName = !nameVal || clientName.includes(nameVal);
+        return matchesDate && matchesName;
+      });
+
+      if (!filtered.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="empty-state">No hay compras que coincidan con el filtro.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered
+        .map((sale) => {
+          const client = allClients.find((c) => c.id === sale.clientId);
+          const date = sale.createdAt?.toDate ? sale.createdAt.toDate() : null;
+          const dateLabel = date
+            ? date.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+            : "—";
+          const productsLabel = sale.items.map((i) => `${escapeHtml(i.name)} (${i.qty})`).join(", ");
+          const jointTag = sale.isJoint ? ` <span class="badge badge-teal">Conjunta</span>` : "";
+          return `
+          <tr>
+            <td>${dateLabel}</td>
+            <td>${client ? escapeHtml(client.name) : "Sin cliente"}${jointTag}</td>
+            <td>${productsLabel}</td>
+            <td>${formatCurrency(sale.total)}</td>
+            <td style="text-transform:capitalize;">${sale.paymentMethod}</td>
+          </tr>`;
+        })
+        .join("");
+    }
+
+    filterDate.addEventListener("input", render);
+    filterName.addEventListener("input", render);
+    document.getElementById("clear-filters-btn").addEventListener("click", () => {
+      filterDate.value = "";
+      filterName.value = "";
+      render();
+    });
+
+    loadData();
+  </script>
+</body>
+</html>

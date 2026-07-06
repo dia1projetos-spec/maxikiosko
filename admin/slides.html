@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slides del inicio — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+  <style>
+    .slide-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--space-4); }
+    .slide-card { background: var(--color-white); border-radius: var(--radius-md); overflow:hidden; box-shadow: var(--shadow-card); }
+    .slide-card img { width:100%; aspect-ratio: 16/9; object-fit:cover; }
+    .slide-card__footer { padding: var(--space-3); display:flex; justify-content:space-between; align-items:center; }
+  </style>
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from "../js/firebase-config.js";
+    import { uploadImageToCloudinary } from "../js/cloudinary-config.js";
+    import { showToast } from "../js/utils.js";
+
+    await initAdminLayout("slides", "Slides del inicio");
+
+    setContent(`
+      <div class="panel">
+        <div class="panel__header"><h2>Subir nueva imagen</h2></div>
+        <p style="color: var(--color-ink-soft); margin-top:-8px;">
+          Se recomienda usar imágenes horizontales (formato apaisado) para que se vean bien en todas las pantallas.
+        </p>
+        <form id="slide-form" style="display:flex; gap: var(--space-3); align-items:center; flex-wrap:wrap;">
+          <input type="file" id="slide-file" accept="image/*" required>
+          <button type="submit" id="slide-upload-btn" class="btn btn-primary">Subir imagen</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header"><h2>Slides actuales</h2></div>
+        <div id="slide-grid" class="slide-grid">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    `);
+
+    const slideGrid = document.getElementById("slide-grid");
+    const slideForm = document.getElementById("slide-form");
+    const slideFileInput = document.getElementById("slide-file");
+    const uploadBtn = document.getElementById("slide-upload-btn");
+
+    async function loadSlides() {
+      const q = query(collection(db, "slides"), orderBy("order", "asc"));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        slideGrid.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🖼️</div><p>Todavía no subiste ninguna imagen.</p></div>`;
+        return;
+      }
+      slideGrid.innerHTML = snap.docs
+        .map(
+          (docSnap) => `
+        <div class="slide-card" data-id="${docSnap.id}">
+          <img src="${docSnap.data().imageUrl}" alt="Slide">
+          <div class="slide-card__footer">
+            <span style="color: var(--color-ink-soft); font-size: var(--fs-sm);">Orden: ${docSnap.data().order}</span>
+            <button class="icon-btn icon-btn--danger delete-slide-btn">🗑️</button>
+          </div>
+        </div>`
+        )
+        .join("");
+
+      slideGrid.querySelectorAll(".delete-slide-btn").forEach((btn) =>
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.closest(".slide-card").dataset.id;
+          if (!confirm("¿Eliminar esta imagen del slider?")) return;
+          await deleteDoc(doc(db, "slides", id));
+          showToast("Imagen eliminada.", "success");
+          loadSlides();
+        })
+      );
+    }
+
+    slideForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const file = slideFileInput.files[0];
+      if (!file) return;
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = "Subiendo...";
+      try {
+        const { url, publicId } = await uploadImageToCloudinary(file, "kiosko-d-diego/slides");
+        const existingCount = slideGrid.querySelectorAll(".slide-card").length;
+        await addDoc(collection(db, "slides"), {
+          imageUrl: url,
+          cloudinaryPublicId: publicId,
+          order: existingCount,
+          createdAt: serverTimestamp(),
+        });
+        slideForm.reset();
+        showToast("Imagen subida correctamente.", "success");
+        loadSlides();
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || "No se pudo subir la imagen.", "error");
+      } finally {
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = "Subir imagen";
+      }
+    });
+
+    loadSlides();
+  </script>
+</body>
+</html>

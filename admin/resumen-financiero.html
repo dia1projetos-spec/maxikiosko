@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resumen financiero — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs } from "../js/firebase-config.js";
+    import { formatCurrency, escapeHtml } from "../js/utils.js";
+
+    await initAdminLayout("resumen-financiero", "Resumen financiero");
+
+    setContent(`
+      <div class="stat-grid">
+        <div class="stat-card stat-card--sales">
+          <div class="stat-card__label">TOTAL DE VENTAS</div>
+          <div class="stat-card__value" id="total-sales" style="font-size: var(--fs-2xl);">—</div>
+        </div>
+        <div class="stat-card stat-card--loss">
+          <div class="stat-card__label">RETIROS FAMILIARES (no son ventas)</div>
+          <div class="stat-card__value" id="total-family">—</div>
+        </div>
+        <div class="stat-card stat-card--profit">
+          <div class="stat-card__label">Ganancia acumulada</div>
+          <div class="stat-card__value" id="total-profit">—</div>
+        </div>
+      </div>
+
+      <div class="checkout-note" style="margin-bottom: var(--space-5);">
+        ℹ️ Los retiros familiares se muestran por separado porque <strong>no se cuentan como venta</strong>:
+        son productos que salieron del stock sin generar ingreso.
+      </div>
+
+      <div class="panel">
+        <div class="panel__header"><h2>Ranking de productos (más vendido → menos vendido)</h2></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Producto</th><th>Cantidad vendida</th><th>Ganancia acumulada</th></tr></thead>
+            <tbody id="ranking-tbody"><tr><td colspan="4"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    `);
+
+    async function load() {
+      const [salesSnap, productsSnap] = await Promise.all([
+        getDocs(collection(db, "sales")),
+        getDocs(collection(db, "products")),
+      ]);
+      const sales = salesSnap.docs.map((d) => d.data());
+      const products = productsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      let totalSales = 0;
+      let totalFamily = 0;
+      sales.forEach((s) => {
+        if (s.isFamilyWithdrawal) totalFamily += s.total || 0;
+        else totalSales += s.total || 0;
+      });
+
+      const totalProfit = products.reduce((sum, p) => sum + (p.totalProfit || 0), 0);
+
+      document.getElementById("total-sales").textContent = formatCurrency(totalSales);
+      document.getElementById("total-family").textContent = formatCurrency(totalFamily);
+      document.getElementById("total-profit").textContent = formatCurrency(totalProfit);
+
+      const sorted = [...products].sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0));
+      const tbody = document.getElementById("ranking-tbody");
+      if (!sorted.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Todavía no hay ventas registradas.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = sorted
+        .map((p, i) => {
+          const soldLabel = p.soldBy === "weight" ? `${(p.totalSold || 0).toFixed(2)} kg` : `${p.totalSold || 0} un.`;
+          return `
+          <tr>
+            <td class="rank-cell">${i + 1}</td>
+            <td>${escapeHtml(p.name)}</td>
+            <td>${soldLabel}</td>
+            <td>${formatCurrency(p.totalProfit || 0)}</td>
+          </tr>`;
+        })
+        .join("");
+    }
+
+    load();
+  </script>
+</body>
+</html>

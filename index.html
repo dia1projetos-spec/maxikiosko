@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kiosko D. Diego</title>
+  <meta name="description" content="Kiosko D. Diego — pedí online y recibí en tu casa." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/store.css" />
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-header">
+    <div class="site-header__bar">
+      <a href="index.html" class="brand">
+        <img id="brand-logo" class="brand__logo" src="" alt="Logo" style="display:none;">
+        <span id="brand-name">Kiosko D. Diego</span>
+      </a>
+      <div class="header-actions">
+        <button id="cart-open-btn" class="cart-button" aria-label="Abrir carrito">
+          🛒 Carrito
+          <span id="cart-count" class="cart-button__badge" style="display:none;">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ HERO SLIDER ============ -->
+  <section class="hero-slider" aria-label="Promociones">
+    <div id="hero-track" class="hero-slider__track"></div>
+    <div id="hero-dots" class="hero-slider__dots"></div>
+    <button id="hero-prev" class="hero-slider__arrow hero-slider__arrow--prev" aria-label="Imagen anterior">‹</button>
+    <button id="hero-next" class="hero-slider__arrow hero-slider__arrow--next" aria-label="Imagen siguiente">›</button>
+    <div id="hero-empty" class="hero-slider__empty" style="display:none;">
+      <span style="font-size:2rem;">🖼️</span>
+      <p>Todavía no hay promociones cargadas.</p>
+    </div>
+  </section>
+
+  <!-- ============ TIENDA ============ -->
+  <main class="container">
+    <div class="store-toolbar">
+      <div class="store-search">
+        <span aria-hidden="true">🔎</span>
+        <input id="store-search-input" type="text" placeholder="Buscar productos..." aria-label="Buscar productos">
+      </div>
+    </div>
+
+    <div id="category-pills" class="category-pills" role="tablist" aria-label="Categorías"></div>
+
+    <div id="product-grid" class="product-grid">
+      <div class="spinner"></div>
+    </div>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="site-footer">
+    <div class="site-footer__inner">
+      <div>
+        <h4 id="footer-brand-name">Kiosko D. Diego</h4>
+        <p style="opacity:0.75; max-width:320px;">Tu kiosco de confianza, ahora también online. Elegí tus productos y te los llevamos a tu casa.</p>
+      </div>
+      <div>
+        <h4>Accesos</h4>
+        <p class="site-footer__admin-link"><a href="login.html">Ingresar al panel administrativo</a></p>
+      </div>
+    </div>
+    <div class="site-footer__bottom">
+      © <span id="footer-year"></span> Kiosko D. Diego. Todos los derechos reservados.
+    </div>
+  </footer>
+
+  <!-- ============ CARRITO (drawer) ============ -->
+  <div id="cart-overlay" class="cart-overlay"></div>
+  <aside id="cart-drawer" class="cart-drawer" aria-label="Carrito de compras">
+    <div class="cart-drawer__header">
+      <h2>Tu pedido</h2>
+      <button id="cart-close-btn" class="cart-drawer__close" aria-label="Cerrar carrito">×</button>
+    </div>
+    <div id="cart-items" class="cart-drawer__items"></div>
+    <div class="cart-drawer__footer">
+      <div class="cart-line">
+        <span>Subtotal</span>
+        <span id="cart-subtotal-value">$0,00</span>
+      </div>
+      <div id="cart-delivery-line" class="cart-line" style="display:none;">
+        <span>Envío</span>
+        <span id="cart-delivery-value">$0,00</span>
+      </div>
+      <div class="cart-total">
+        <span>Total</span>
+        <span id="cart-total-value">$0,00</span>
+      </div>
+      <button id="checkout-btn" class="btn btn-primary btn-block" disabled>Finalizar pedido</button>
+    </div>
+  </aside>
+
+  <!-- ============ MODAL DE CHECKOUT ============ -->
+  <div id="checkout-overlay" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Finalizar pedido</h2>
+        <button id="checkout-close-btn" class="cart-drawer__close" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="checkout-note">
+        📲 Al finalizar, vas a ser redirigido a WhatsApp con tu pedido completo para confirmarlo con nosotros.
+      </div>
+
+      <form id="checkout-form">
+        <div class="form-group">
+          <label for="customerName">Nombre completo *</label>
+          <input type="text" id="customerName" name="customerName" required>
+        </div>
+        <div class="form-group">
+          <label for="customerContact">Teléfono de contacto *</label>
+          <input type="tel" id="customerContact" name="customerContact" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="street">Calle *</label>
+            <input type="text" id="street" name="street" required>
+          </div>
+          <div class="form-group">
+            <label for="number">Número *</label>
+            <input type="text" id="number" name="number" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="complement">Complemento (opcional)</label>
+          <input type="text" id="complement" name="complement" placeholder="Piso, depto, entre calles, etc.">
+        </div>
+        <div class="form-group">
+          <label for="neighborhood">Barrio *</label>
+          <input type="text" id="neighborhood" name="neighborhood" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Finalizar pedido por WhatsApp</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("footer-year").textContent = new Date().getFullYear();
+  </script>
+  <script type="module" src="js/store.js"></script>
+</body>
+</html>

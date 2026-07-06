@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingresar — Kiosko D. Diego</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-5);
+    }
+    .login-card {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-elevated);
+      padding: var(--space-7) var(--space-6);
+      width: min(400px, 100%);
+    }
+    .login-card__icon {
+      width: 56px; height: 56px;
+      border-radius: var(--radius-md);
+      background: var(--color-teal);
+      color: var(--color-white);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: var(--space-4);
+    }
+    .login-error {
+      background: rgba(168,68,47,0.1);
+      color: var(--color-brick);
+      border: 1px solid rgba(168,68,47,0.3);
+      border-radius: var(--radius-sm);
+      padding: var(--space-3);
+      font-size: var(--fs-sm);
+      margin-bottom: var(--space-4);
+      display: none;
+    }
+    .login-back {
+      display: inline-block;
+      margin-top: var(--space-5);
+      font-size: var(--fs-sm);
+      color: var(--color-ink-soft);
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-card__icon">🔐</div>
+      <h1 style="font-size: var(--fs-lg);">Panel administrativo</h1>
+      <p style="color: var(--color-ink-soft); margin-bottom: var(--space-5);">Ingresá con tu usuario para gestionar el kiosko.</p>
+
+      <div id="login-error" class="login-error"></div>
+
+      <form id="login-form">
+        <div class="form-group" style="margin-bottom: var(--space-4);">
+          <label for="email">Correo electrónico</label>
+          <input type="email" id="email" name="email" required autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-bottom: var(--space-4);">
+          <label for="password">Contraseña</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" id="login-submit" class="btn btn-secondary btn-block">Ingresar</button>
+      </form>
+
+      <a class="login-back" href="index.html">← Volver a la tienda</a>
+    </div>
+  </div>
+
+  <script type="module">
+    import { loginWithEmail } from "./js/auth.js";
+
+    const form = document.getElementById("login-form");
+    const errorBox = document.getElementById("login-error");
+    const submitBtn = document.getElementById("login-submit");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Ingresando...";
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await loginWithEmail(email, password);
+        window.location.href = "admin/dashboard.html";
+      } catch (err) {
+        console.error(err);
+        errorBox.textContent = "Correo o contraseña incorrectos. Verificá tus datos.";
+        errorBox.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Ingresar";
+      }
+    });
+  </script>
+</body>
+</html>

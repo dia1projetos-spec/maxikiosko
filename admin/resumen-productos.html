@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Resumen de productos — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs } from "../js/firebase-config.js";
+    import { formatCurrency, escapeHtml } from "../js/utils.js";
+
+    await initAdminLayout("resumen-productos", "Resumen de productos");
+
+    setContent(`
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Ranking de productos vendidos</h2>
+        </div>
+        <p style="color: var(--color-ink-soft); margin-top:-8px;">
+          Ordenado del producto que más se vendió al que menos se vendió. La ganancia
+          se calcula automáticamente en base a la ganancia unitaria cargada en cada producto.
+        </p>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Cantidad vendida</th>
+                <th>Ganancia acumulada</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-tbody">
+              <tr><td colspan="4"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `);
+
+    async function loadRanking() {
+      const snap = await getDocs(collection(db, "products"));
+      const products = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      const sorted = products.sort((a, b) => (b.totalSold || 0) - (a.totalSold || 0));
+      const tbody = document.getElementById("ranking-tbody");
+
+      if (!sorted.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Todavía no hay ventas registradas.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = sorted
+        .map((p, i) => {
+          const soldLabel = p.soldBy === "weight" ? `${(p.totalSold || 0).toFixed(2)} kg` : `${p.totalSold || 0} un.`;
+          return `
+          <tr>
+            <td class="rank-cell">${i + 1}</td>
+            <td>${escapeHtml(p.name)}</td>
+            <td>${soldLabel}</td>
+            <td>${formatCurrency(p.totalProfit || 0)}</td>
+          </tr>`;
+        })
+        .join("");
+    }
+
+    loadRanking();
+  </script>
+</body>
+</html>

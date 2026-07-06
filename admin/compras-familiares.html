@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retiros familiares — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs, query, where, orderBy } from "../js/firebase-config.js";
+    import { formatCurrency, escapeHtml } from "../js/utils.js";
+
+    await initAdminLayout("compras-familiares", "Retiros familiares");
+
+    setContent(`
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Retiros familiares</h2>
+        </div>
+        <p style="color: var(--color-ink-soft); margin-top:-8px;">
+          Productos retirados por familiares (no se cobran y no se contabilizan como venta).
+        </p>
+        <div class="stat-grid" style="margin-bottom: var(--space-5);">
+          <div class="stat-card stat-card--loss">
+            <div class="stat-card__label">Total retirado</div>
+            <div class="stat-card__value" id="total-withdrawn">—</div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Fecha</th><th>Retirado por</th><th>Productos</th><th>Valor total</th></tr></thead>
+            <tbody id="family-tbody"><tr><td colspan="4"><div class="spinner"></div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    `);
+
+    async function load() {
+      const [salesSnap, clientsSnap] = await Promise.all([
+        getDocs(query(collection(db, "sales"), where("isFamilyWithdrawal", "==", true), orderBy("createdAt", "desc"))),
+        getDocs(collection(db, "clients")),
+      ]);
+      const sales = salesSnap.docs.map((d) => d.data());
+      const clients = clientsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      const tbody = document.getElementById("family-tbody");
+      if (!sales.length) {
+        tbody.innerHTML = `<tr><td colspan="4" class="empty-state">Todavía no hay retiros familiares registrados.</td></tr>`;
+        document.getElementById("total-withdrawn").textContent = formatCurrency(0);
+        return;
+      }
+
+      let total = 0;
+      tbody.innerHTML = sales
+        .map((sale) => {
+          total += sale.total || 0;
+          const client = clients.find((c) => c.id === sale.clientId);
+          const date = sale.createdAt?.toDate ? sale.createdAt.toDate() : null;
+          const dateLabel = date ? date.toLocaleDateString("es-AR") : "—";
+          const productsLabel = sale.items.map((i) => `${escapeHtml(i.name)} (${i.qty})`).join(", ");
+          return `
+          <tr>
+            <td>${dateLabel}</td>
+            <td>${client ? escapeHtml(client.name) : "—"}</td>
+            <td>${productsLabel}</td>
+            <td>${formatCurrency(sale.total)}</td>
+          </tr>`;
+        })
+        .join("");
+
+      document.getElementById("total-withdrawn").textContent = formatCurrency(total);
+    }
+
+    load();
+  </script>
+</body>
+</html>

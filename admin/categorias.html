@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Categorías — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy } from "../js/firebase-config.js";
+    import { showToast, escapeHtml } from "../js/utils.js";
+
+    await initAdminLayout("categorias", "Categorías");
+
+    setContent(`
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Nueva categoría</h2>
+        </div>
+        <form id="category-form" class="admin-form" style="display:flex; gap: var(--space-3); align-items:flex-end; flex-wrap:wrap;">
+          <div class="form-group" style="flex:1; min-width:220px; margin-bottom:0;">
+            <label for="category-name">Nombre de la categoría</label>
+            <input type="text" id="category-name" placeholder="Ej: Bebidas, Golosinas, Almacén..." required>
+          </div>
+          <button type="submit" class="btn btn-primary">Agregar categoría</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="panel__header">
+          <h2>Categorías cargadas</h2>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Nombre</th><th style="width:120px;">Acciones</th></tr></thead>
+            <tbody id="category-tbody">
+              <tr><td colspan="2"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `);
+
+    const tbody = document.getElementById("category-tbody");
+    const form = document.getElementById("category-form");
+    const nameInput = document.getElementById("category-name");
+
+    async function loadCategories() {
+      const q = query(collection(db, "categories"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        tbody.innerHTML = `<tr><td colspan="2" class="empty-state">Todavía no creaste ninguna categoría.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = snap.docs
+        .map((docSnap) => {
+          const cat = docSnap.data();
+          return `
+          <tr data-id="${docSnap.id}">
+            <td class="cat-name">${escapeHtml(cat.name)}</td>
+            <td>
+              <div class="action-icons">
+                <button class="icon-btn cat-edit" title="Editar">✏️</button>
+                <button class="icon-btn icon-btn--danger cat-delete" title="Eliminar">🗑️</button>
+              </div>
+            </td>
+          </tr>`;
+        })
+        .join("");
+
+      tbody.querySelectorAll(".cat-edit").forEach((btn) =>
+        btn.addEventListener("click", (e) => handleEdit(e.target.closest("tr")))
+      );
+      tbody.querySelectorAll(".cat-delete").forEach((btn) =>
+        btn.addEventListener("click", (e) => handleDelete(e.target.closest("tr")))
+      );
+    }
+
+    async function handleEdit(row) {
+      const id = row.dataset.id;
+      const currentName = row.querySelector(".cat-name").textContent;
+      const newName = prompt("Editar nombre de la categoría:", currentName);
+      if (!newName || !newName.trim() || newName.trim() === currentName) return;
+      try {
+        await updateDoc(doc(db, "categories", id), { name: newName.trim() });
+        showToast("Categoría actualizada.", "success");
+        loadCategories();
+      } catch (err) {
+        console.error(err);
+        showToast("No se pudo actualizar la categoría.", "error");
+      }
+    }
+
+    async function handleDelete(row) {
+      const id = row.dataset.id;
+      if (!confirm("¿Eliminar esta categoría? Los productos que la usan quedarán sin categoría.")) return;
+      try {
+        await deleteDoc(doc(db, "categories", id));
+        showToast("Categoría eliminada.", "success");
+        loadCategories();
+      } catch (err) {
+        console.error(err);
+        showToast("No se pudo eliminar la categoría.", "error");
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      if (!name) return;
+      try {
+        await addDoc(collection(db, "categories"), { name, createdAt: serverTimestamp() });
+        nameInput.value = "";
+        showToast("Categoría creada.", "success");
+        loadCategories();
+      } catch (err) {
+        console.error(err);
+        showToast("No se pudo crear la categoría.", "error");
+      }
+    });
+
+    loadCategories();
+  </script>
+</body>
+</html>

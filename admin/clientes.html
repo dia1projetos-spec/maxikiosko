@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clientes — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <!-- Modal: nuevo / editar cliente -->
+  <div id="client-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+        <h2 id="client-modal-title">Nuevo cliente</h2>
+        <button id="client-modal-close" class="cart-drawer__close">×</button>
+      </div>
+      <form id="client-form" class="admin-form">
+        <input type="hidden" id="client-id">
+        <div class="form-group">
+          <label for="client-name">Nombre completo *</label>
+          <input type="text" id="client-name" required>
+        </div>
+        <div class="form-group">
+          <label for="client-contact">Contacto (teléfono) *</label>
+          <input type="text" id="client-contact" required>
+        </div>
+        <div class="form-group">
+          <label>Tipo de cliente *</label>
+          <div class="radio-group">
+            <label><input type="radio" name="clientType" value="common" checked> Común</label>
+            <label><input type="radio" name="clientType" value="family"> Familiar (no paga)</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="client-retention">Guardar historial por (días) — opcional</label>
+          <input type="number" id="client-retention" min="1" placeholder="Ej: 90 (dejar vacío para no borrar nunca)">
+          <p class="hint">Si lo definís, el historial más viejo que esta cantidad de días se elimina automáticamente.</p>
+        </div>
+        <button type="submit" id="client-save-btn" class="btn btn-primary btn-block">Guardar cliente</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: historial del cliente -->
+  <div id="history-modal" class="modal-overlay">
+    <div class="modal-box modal-box--lg">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+        <h2 id="history-modal-title">Historial del cliente</h2>
+        <button id="history-modal-close" class="cart-drawer__close">×</button>
+      </div>
+      <div id="fiado-banner" style="display:none;" class="checkout-note">
+        💸 Este cliente tiene un fiado abierto de <strong id="fiado-amount"></strong>.
+        <button id="mark-fiado-paid-btn" class="btn btn-secondary btn-sm" style="margin-left:auto;">Marcar como pagado</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Fecha</th><th>Total</th><th>Forma de pago</th><th>Detalle</th></tr>
+          </thead>
+          <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/clientes.js"></script>
+</body>
+</html>

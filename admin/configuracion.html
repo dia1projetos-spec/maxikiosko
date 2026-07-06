@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Configuración — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <script type="module">
+    import { initAdminLayout, setContent } from "./js/admin-layout.js";
+    import { db, doc, getDoc, setDoc, serverTimestamp } from "../js/firebase-config.js";
+    import { uploadImageToCloudinary } from "../js/cloudinary-config.js";
+    import { showToast } from "../js/utils.js";
+
+    await initAdminLayout("configuracion", "Configuración");
+
+    setContent(`
+      <div class="panel" style="max-width:600px;">
+        <div class="panel__header"><h2>Identidad del negocio</h2></div>
+        <form id="config-form" class="admin-form">
+          <div class="form-group">
+            <label for="business-name">Nombre del negocio</label>
+            <input type="text" id="business-name" placeholder="Ej: Kiosko D. Diego">
+          </div>
+
+          <div class="form-group">
+            <label for="logo-file">Logo (opcional)</label>
+            <div style="display:flex; align-items:center; gap: var(--space-3);">
+              <img id="logo-preview" style="width:64px; height:64px; object-fit:cover; border-radius:10px; display:none; background: var(--color-paper-alt);">
+              <input type="file" id="logo-file" accept="image/*">
+            </div>
+            <button type="button" id="remove-logo-btn" class="btn btn-outline btn-sm" style="margin-top: var(--space-2); display:none;">
+              Quitar logo y nombre
+            </button>
+          </div>
+
+          <div class="form-group">
+            <label for="whatsapp-number">Número de WhatsApp (con código de país, sin + ni espacios)</label>
+            <input type="text" id="whatsapp-number" placeholder="Ej: 5493511234567">
+            <p class="hint">A este número se enviarán los pedidos hechos desde la tienda online.</p>
+          </div>
+
+          <div class="form-group">
+            <label><input type="checkbox" id="delivery-enabled" style="width:auto;"> Ofrecer delivery en la tienda online</label>
+          </div>
+
+          <div class="form-group" id="delivery-cost-group" style="display:none;">
+            <label for="delivery-cost">Costo de envío (dejar en 0 para envío gratis)</label>
+            <input type="number" id="delivery-cost" min="0" step="0.01">
+          </div>
+
+          <button type="submit" id="config-save-btn" class="btn btn-primary btn-block">Guardar configuración</button>
+        </form>
+      </div>
+    `);
+
+    const form = document.getElementById("config-form");
+    const businessNameInput = document.getElementById("business-name");
+    const logoFileInput = document.getElementById("logo-file");
+    const logoPreview = document.getElementById("logo-preview");
+    const removeLogoBtn = document.getElementById("remove-logo-btn");
+    const whatsappInput = document.getElementById("whatsapp-number");
+    const deliveryEnabledInput = document.getElementById("delivery-enabled");
+    const deliveryCostGroup = document.getElementById("delivery-cost-group");
+    const deliveryCostInput = document.getElementById("delivery-cost");
+    const saveBtn = document.getElementById("config-save-btn");
+
+    let currentLogoUrl = null;
+    let removeLogoFlag = false;
+
+    async function loadConfig() {
+      const snap = await getDoc(doc(db, "config", "general"));
+      if (snap.exists()) {
+        const config = snap.data();
+        businessNameInput.value = config.businessName || "";
+        whatsappInput.value = config.whatsappNumber || "";
+        deliveryEnabledInput.checked = !!config.deliveryEnabled;
+        deliveryCostInput.value = config.deliveryCost ?? "";
+        deliveryCostGroup.style.display = config.deliveryEnabled ? "block" : "none";
+        if (config.logoUrl) {
+          currentLogoUrl = config.logoUrl;
+          logoPreview.src = config.logoUrl;
+          logoPreview.style.display = "block";
+          removeLogoBtn.style.display = "inline-flex";
+        }
+      }
+    }
+
+    deliveryEnabledInput.addEventListener("change", () => {
+      deliveryCostGroup.style.display = deliveryEnabledInput.checked ? "block" : "none";
+    });
+
+    logoFileInput.addEventListener("change", () => {
+      const file = logoFileInput.files[0];
+      if (!file) return;
+      removeLogoFlag = false;
+      const reader = new FileReader();
+      reader.onload = () => {
+        logoPreview.src = reader.result;
+        logoPreview.style.display = "block";
+        removeLogoBtn.style.display = "inline-flex";
+      };
+      reader.readAsDataURL(file);
+    });
+
+    removeLogoBtn.addEventListener("click", () => {
+      removeLogoFlag = true;
+      currentLogoUrl = null;
+      logoFileInput.value = "";
+      logoPreview.style.display = "none";
+      removeLogoBtn.style.display = "none";
+      businessNameInput.value = "";
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Guardando...";
+      try {
+        let logoUrl = currentLogoUrl;
+        const file = logoFileInput.files[0];
+        if (file) {
+          saveBtn.textContent = "Subiendo logo...";
+          const uploaded = await uploadImageToCloudinary(file, "kiosko-d-diego/logo");
+          logoUrl = uploaded.url;
+        }
+        if (removeLogoFlag) logoUrl = null;
+
+        await setDoc(doc(db, "config", "general"), {
+          businessName: businessNameInput.value.trim() || null,
+          logoUrl,
+          whatsappNumber: whatsappInput.value.trim(),
+          deliveryEnabled: deliveryEnabledInput.checked,
+          deliveryCost: deliveryCostInput.value ? Number(deliveryCostInput.value) : 0,
+          updatedAt: serverTimestamp(),
+        });
+
+        showToast("Configuración guardada.", "success");
+        removeLogoFlag = false;
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || "No se pudo guardar la configuración.", "error");
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Guardar configuración";
+      }
+    });
+
+    loadConfig();
+  </script>
+</body>
+</html>

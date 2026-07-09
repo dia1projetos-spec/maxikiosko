@@ -137,6 +137,19 @@ expenses/{expenseId}
 }
 ```
 
+### `suppliers` (proveedores del negocio)
+```
+suppliers/{supplierId}
+{
+  name: string,
+  contact: string | null,
+  orders: [
+    { item: string, receivedDate: "YYYY-MM-DD", amountPaid: number, createdAt: timestamp }
+  ],
+  createdAt: timestamp
+}
+```
+
 ## Autenticación
 - Firebase Authentication (Email/Password), usuarios creados manualmente desde la
   consola de Firebase. Todos los usuarios autenticados tienen el mismo nivel de

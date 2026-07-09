@@ -281,6 +281,7 @@ const jointClientsWrap = document.getElementById("joint-clients-wrap");
 const jointClientsList = document.getElementById("joint-clients-list");
 const paymentTotalEl = document.getElementById("payment-total");
 const confirmSaleBtn = document.getElementById("confirm-sale-btn");
+const saleDateInput = document.getElementById("sale-date");
 
 function populateClientSelect() {
   paymentClientSelect.innerHTML =
@@ -292,6 +293,7 @@ function populateClientSelect() {
 
 finalizeBtn.addEventListener("click", () => {
   paymentTotalEl.textContent = ticketTotalEl.textContent;
+  saleDateInput.value = new Date().toISOString().slice(0, 10);
   paymentModal.classList.add("is-open");
   updatePaymentUI();
 });
@@ -369,6 +371,11 @@ confirmSaleBtn.addEventListener("click", async () => {
     const cashGiven = method === "efectivo" && !isFamilyWithdrawal ? Number(cashGivenInput.value) || 0 : null;
     const change = cashGiven !== null ? cashGiven - total : null;
 
+    // Fecha elegida por el usuario (puede ser retroactiva). Se agrega el
+    // mediodía para evitar corrimientos de día por husos horarios.
+    const chosenDateStr = saleDateInput.value || new Date().toISOString().slice(0, 10);
+    const saleDate = new Date(`${chosenDateStr}T12:00:00`);
+
     const saleData = {
       items: ticket.map((i) => ({
         productId: i.productId,
@@ -388,6 +395,7 @@ confirmSaleBtn.addEventListener("click", async () => {
       change,
       fiadoPaid: false,
       fiadoPaidAt: null,
+      saleDate,
       createdAt: serverTimestamp(),
     };
 
@@ -403,19 +411,19 @@ confirmSaleBtn.addEventListener("click", async () => {
 
     // Actualizar cliente(s): historial + fiado
     if (isFamilyWithdrawal && clientId) {
-      await addHistoryEntry(clientId, saleDoc.id, total, "retiro_familiar", { isFamilyWithdrawal: true });
+      await addHistoryEntry(clientId, saleDoc.id, total, "retiro_familiar", { isFamilyWithdrawal: true }, 0, saleDate);
     } else if (method === "fiado" && clientId) {
       if (isJoint && jointClientIds.length) {
         const share = total / (jointClientIds.length + 1);
-        await addHistoryEntry(clientId, saleDoc.id, share, "fiado", { isJoint: true }, share);
+        await addHistoryEntry(clientId, saleDoc.id, share, "fiado", { isJoint: true }, share, saleDate);
         for (const jId of jointClientIds) {
-          await addHistoryEntry(jId, saleDoc.id, share, "fiado", { isJoint: true }, share);
+          await addHistoryEntry(jId, saleDoc.id, share, "fiado", { isJoint: true }, share, saleDate);
         }
       } else {
-        await addHistoryEntry(clientId, saleDoc.id, total, "fiado", {}, total);
+        await addHistoryEntry(clientId, saleDoc.id, total, "fiado", {}, total, saleDate);
       }
     } else if (clientId) {
-      await addHistoryEntry(clientId, saleDoc.id, total, method, {});
+      await addHistoryEntry(clientId, saleDoc.id, total, method, {}, 0, saleDate);
     }
 
     showToast("¡Venta registrada correctamente!", "success");
@@ -435,14 +443,14 @@ confirmSaleBtn.addEventListener("click", async () => {
   }
 });
 
-async function addHistoryEntry(clientId, saleId, total, paymentMethod, extra = {}, fiadoAmountToAdd = 0) {
+async function addHistoryEntry(clientId, saleId, total, paymentMethod, extra = {}, fiadoAmountToAdd = 0, entryDate = new Date()) {
   const client = allClients.find((c) => c.id === clientId);
   if (!client) return;
   const newHistory = [
     ...(client.history || []),
     {
       saleId,
-      date: new Date(),
+      date: entryDate,
       total,
       paymentMethod,
       isJoint: !!extra.isJoint,

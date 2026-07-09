@@ -81,7 +81,8 @@ select:focus-visible {
   border-radius: var(--radius-md);
   font-weight: 600;
   font-size: var(--fs-base);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  letter-spacing: 0.01em;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.15s ease;
   white-space: nowrap;
 }
 
@@ -90,15 +91,24 @@ select:focus-visible {
 .btn-primary {
   background: var(--color-mustard);
   color: var(--color-ink);
-  box-shadow: var(--shadow-card);
+  box-shadow: 0 2px 8px rgba(232, 169, 58, 0.35);
 }
-.btn-primary:hover { background: var(--color-mustard-dark); }
+.btn-primary:hover {
+  background: var(--color-mustard-dark);
+  box-shadow: 0 4px 14px rgba(232, 169, 58, 0.45);
+  transform: translateY(-1px);
+}
 
 .btn-secondary {
   background: var(--color-teal);
   color: var(--color-white);
+  box-shadow: 0 2px 8px rgba(30, 110, 110, 0.25);
 }
-.btn-secondary:hover { background: var(--color-teal-dark); }
+.btn-secondary:hover {
+  background: var(--color-teal-dark);
+  box-shadow: 0 4px 14px rgba(30, 110, 110, 0.35);
+  transform: translateY(-1px);
+}
 
 .btn-outline {
   background: transparent;
@@ -130,6 +140,7 @@ select:focus-visible {
   z-index: 100;
   background: var(--color-paper);
   border-bottom: 1px solid var(--color-line);
+  box-shadow: 0 2px 12px rgba(36, 32, 27, 0.05);
 }
 
 .site-header__bar {
@@ -175,6 +186,13 @@ select:focus-visible {
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(30, 110, 110, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.cart-button:hover {
+  background: var(--color-teal-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 110, 110, 0.35);
 }
 
 .cart-button__badge {

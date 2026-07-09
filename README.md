@@ -34,6 +34,31 @@ kiosko-d-diego/
     └── MODELO-DE-DATOS.md  → Estructura completa de las colecciones de Firestore
 ```
 
+## 🆕 Novedades de esta versión
+
+- **Proveedores** (`admin/proveedores.html`): registrá cada proveedor y, para
+  cada uno, los pedidos que le hiciste (qué pediste, fecha de recepción y
+  cuánto pagaste). Muestra el total pagado por proveedor y el total general.
+- **Gastos del negocio** (`admin/gastos.html`): ya estaba, ahora se refleja
+  también en el Resumen financiero como "Ganancia neta" (ganancia − gastos).
+- **Fecha retroactiva en Caja:** al finalizar una venta, podés cambiar la
+  fecha (por defecto es hoy) para cargar ventas de días anteriores. Esa fecha
+  se usa en todo el sistema (historial de compras, resumen, cliente).
+- **Corrección importante:** el Resumen financiero dejaba de funcionar por
+  completo si la colección `expenses` no tenía permisos (por ejemplo, si no
+  actualizaste las reglas de Firestore). Ahora cada sección se carga de forma
+  independiente, así un problema puntual no rompe toda la página.
+- **Cloudinary:** mensajes de error más claros indicando exactamente qué
+  revisar (nombre del preset, Signing Mode) cuando la subida de imagen falla.
+- **Visual:** la grilla de productos ahora muestra más columnas en pantallas
+  chicas (2 en celulares, 3 en tablets), y se pulieron sombras, botones y
+  tarjetas para un aspecto más profesional.
+
+⚠️ **Importante:** si ya habías publicado las reglas de Firestore antes,
+tenés que volver a pegar el contenido actualizado de `firestore.rules`
+(ahora incluye `expenses` y `suppliers`) y publicar de nuevo, o esos dos
+módulos nuevos no van a funcionar.
+
 ## ✅ Pasos obligatorios antes de usar el sistema
 
 ### 1. Crear el Upload Preset de Cloudinary (subida de imágenes)

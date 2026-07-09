@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proveedores — Panel administrativo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body>
+  <div id="admin-root"></div>
+
+  <!-- Modal: nuevo / editar proveedor -->
+  <div id="supplier-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+        <h2 id="supplier-modal-title">Nuevo proveedor</h2>
+        <button id="supplier-modal-close" class="cart-drawer__close">×</button>
+      </div>
+      <form id="supplier-form" class="admin-form">
+        <input type="hidden" id="supplier-id">
+        <div class="form-group">
+          <label for="supplier-name">Nombre del proveedor *</label>
+          <input type="text" id="supplier-name" required>
+        </div>
+        <div class="form-group">
+          <label for="supplier-contact">Contacto (opcional)</label>
+          <input type="text" id="supplier-contact" placeholder="Teléfono, email, etc.">
+        </div>
+        <button type="submit" id="supplier-save-btn" class="btn btn-primary btn-block">Guardar proveedor</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: pedidos del proveedor -->
+  <div id="orders-modal" class="modal-overlay">
+    <div class="modal-box modal-box--lg">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-4);">
+        <h2 id="orders-modal-title">Pedidos</h2>
+        <button id="orders-modal-close" class="cart-drawer__close">×</button>
+      </div>
+
+      <form id="order-form" class="admin-form" style="border-bottom: 1px solid var(--color-line); padding-bottom: var(--space-4); margin-bottom: var(--space-4);">
+        <div class="form-group">
+          <label for="order-item">¿Qué se pidió? *</label>
+          <input type="text" id="order-item" placeholder="Ej: 2 cajones de gaseosas, cigarrillos, etc." required>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="order-date">Fecha de recepción *</label>
+            <input type="date" id="order-date" required>
+          </div>
+          <div class="form-group">
+            <label for="order-amount">Monto pagado *</label>
+            <input type="number" id="order-amount" min="0" step="0.01" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Agregar pedido</button>
+      </form>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--space-3);">
+        <strong>Historial de pedidos</strong>
+        <strong id="supplier-total-paid" style="font-family: var(--font-mono);"></strong>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Pedido</th><th>Monto</th><th style="width:50px;"></th></tr></thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/proveedores.js"></script>
+</body>
+</html>

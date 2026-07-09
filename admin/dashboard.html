@@ -61,6 +61,11 @@
           <span class="module-card__title">Gastos del negocio</span>
           <span class="module-card__desc">Registrar gastos y ver el total.</span>
         </a>
+        <a class="module-card" href="proveedores.html">
+          <span class="module-card__icon">🚚</span>
+          <span class="module-card__title">Proveedores</span>
+          <span class="module-card__desc">Pedidos, fechas y pagos.</span>
+        </a>
         <a class="module-card" href="resumen-financiero.html">
           <span class="module-card__icon">💰</span>
           <span class="module-card__title">Resumen financiero</span>
@@ -94,7 +99,8 @@
         let salesToday = 0;
         salesSnap.forEach((docSnap) => {
           const sale = docSnap.data();
-          const date = sale.createdAt?.toDate ? sale.createdAt.toDate() : null;
+          const dateField = sale.saleDate || sale.createdAt;
+          const date = dateField?.toDate ? dateField.toDate() : null;
           if (date && date.toDateString() === todayStr && !sale.isFamilyWithdrawal) {
             salesToday += sale.total || 0;
           }

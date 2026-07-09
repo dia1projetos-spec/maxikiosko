@@ -62,7 +62,8 @@
         .map((sale) => {
           total += sale.total || 0;
           const client = clients.find((c) => c.id === sale.clientId);
-          const date = sale.createdAt?.toDate ? sale.createdAt.toDate() : null;
+          const saleDateField = sale.saleDate || sale.createdAt;
+          const date = saleDateField?.toDate ? saleDateField.toDate() : null;
           const dateLabel = date ? date.toLocaleDateString("es-AR") : "—";
           const productsLabel = sale.items.map((i) => `${escapeHtml(i.name)} (${i.qty})`).join(", ");
           return `

@@ -18,6 +18,7 @@ const NAV_ITEMS = [
     { href: "compras.html", icon: "🗂️", label: "Historial de compras", key: "compras" },
     { href: "compras-familiares.html", icon: "👨‍👩‍👧", label: "Retiros familiares", key: "compras-familiares" },
     { href: "gastos.html", icon: "🧮", label: "Gastos del negocio", key: "gastos" },
+    { href: "proveedores.html", icon: "🚚", label: "Proveedores", key: "proveedores" },
     { href: "resumen-financiero.html", icon: "💰", label: "Resumen financiero", key: "resumen-financiero" },
   ]},
   { group: "Clientes", items: [

@@ -48,10 +48,23 @@ export async function uploadImageToCloudinary(file, folder = "") {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(
-      errorBody?.error?.message ||
-        "No se pudo subir la imagen a Cloudinary. Verificá el upload preset."
-    );
+    const rawMessage = errorBody?.error?.message || "";
+
+    // Mensajes más claros según el error típico de Cloudinary
+    if (/preset not found/i.test(rawMessage)) {
+      throw new Error(
+        `No se encontró el upload preset "${CLOUDINARY_UPLOAD_PRESET}" en Cloudinary. ` +
+          `Verificá en Cloudinary → Settings → Upload → Upload presets que el nombre sea ` +
+          `exactamente ese (sin espacios ni mayúsculas de más) y que el "Signing Mode" esté en "Unsigned".`
+      );
+    }
+    if (/whitelisted|not allowed/i.test(rawMessage)) {
+      throw new Error(
+        `Cloudinary rechazó la subida. Revisá que el preset "${CLOUDINARY_UPLOAD_PRESET}" esté ` +
+          `configurado como "Unsigned" en Settings → Upload → Upload presets.`
+      );
+    }
+    throw new Error(rawMessage || "No se pudo subir la imagen a Cloudinary. Verificá el upload preset.");
   }
 
   const data = await response.json();
